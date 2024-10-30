@@ -1,3 +1,5 @@
 glad
 venv
 build
+.idea
+cmake-build-*
