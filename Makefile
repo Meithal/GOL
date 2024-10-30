@@ -1,7 +1,12 @@
 .PHONY: GOL
 
-GOL: glad glfw
+GOL: glad glfw build
+	cmake --build build
+	build/GOL
 
+build:
+	mkdir build
+	cmake -S . -B build .
 
 glad: .git venv
 	./venv/bin/activate
