@@ -1,0 +1,3 @@
+Install: make GOL
+
+Run: ./build/GOL[.exe]
