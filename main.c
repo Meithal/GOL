@@ -4,23 +4,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/*
 static const struct
 {
     float x, y;
-    float r, g, b;
-} vertices[3] =
+} vertices_pos[3] =
         {
-                { -0.6f, -0.4f, 1.f, 0.f, 0.f },
-                {  0.6f, -0.4f, 0.f, 1.f, 0.f },
-                {   0.f,  0.6f, 0.f, 0.f, 1.f }
+                { -0.6f, -0.4f },
+                {  0.6f, -0.4f },
+                {   0.f,  0.6f }
         };
 
-int vertix_count = sizeof vertices / sizeof vertices[0];
+static const struct {
+    float r, g, b;
+} vertices_colors[] = {
+        { 1.f, 0.f, 0.f },
+        { 0.f, 1.f, 0.f },
+        { 0.f, 0.f, 1.f }
+};
 
+int vertix_count = sizeof vertices_pos / sizeof vertices_pos[0];
+*/
 static int WIDTH = 640;
 static int HEIGHT = 480;
 
-
+/*
 static const char* vertex_shader_text =
         "#version 110\n"
         "uniform mat4 MVP;\n"
@@ -40,7 +48,7 @@ static const char* fragment_shader_text =
         "{\n"
         "    gl_FragColor = vec4(color, 1.0);\n"
         "}\n";
-
+*/
 
 static void error_callback(int error, const char* description)
 {
@@ -76,8 +84,11 @@ static GLFWwindow* OpenWindow(void)
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    // essai avec gles
+    // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); // Specify OpenGL ES
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Simple example", nullptr, nullptr);
     if (!window)
@@ -98,6 +109,7 @@ static GLFWwindow* OpenWindow(void)
         exit(EXIT_FAILURE);
     } else {
         printf("Loaded OpenGL %d \n", version);//, GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+        printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
     }
 
     glfwSwapInterval(1);
@@ -130,9 +142,7 @@ void LoadShaders(GLuint * program) {
             char infoLog[512];
             glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
             fprintf(stderr, "ERROR: Vertex Shader compilation failed\n%s\n", infoLog);
-
         }
-
     }
 
     {
@@ -140,7 +150,7 @@ void LoadShaders(GLuint * program) {
 
         long frag_size = getFileSize("shaders/simple.frag");
         char * fragment_shader_text = malloc(frag_size);
-        FILE * f = fopen("shaders/pixel_screen.vert", "rb");
+        FILE * f = fopen("shaders/simple.frag", "rb");
         fread(fragment_shader_text, frag_size, 1, f);
         fclose(f);
         const char* sourceStrings[] = { fragment_shader_text };
@@ -159,7 +169,6 @@ void LoadShaders(GLuint * program) {
             fprintf(stderr, "ERROR: Fragment Shader compilation failed\n%s\n", infoLog);
 
         }
-
     }
 
     *program = glCreateProgram();
@@ -174,12 +183,13 @@ void LoadShaders(GLuint * program) {
         glGetProgramInfoLog(*program, 512, NULL, infoLog);
         fprintf(stderr, "ERROR: Shader linking failed\n%s\n", infoLog);
     }
-
 }
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int count, float pixelData[count], int height, int width) {
+void GeneratePixelData(int count, float pixelColorData[count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
+
+    float pixelPosData[count];
 
     int j = 0;
     // Example: Add points with different colors and positions
@@ -190,53 +200,82 @@ void GeneratePixelData(int count, float pixelData[count], int height, int width)
         float g = (rand() % 256) / 255.0f; // Random green color
         float b = (rand() % 256) / 255.0f; // Random blue color
 
-        pixelData[j++] =x;
-        pixelData[j++] =y;
-        pixelData[j++] =r;
-        pixelData[j++] =g;
-        pixelData[j++] =b;
+        pixelPosData[j++] =x;
+        pixelPosData[j++] =y;
+        pixelColorData[j++] =r;
+        pixelColorData[j++] =g;
+        pixelColorData[j++] =b;
     }
-}
+    GLuint buffers[2];
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(2, buffers);
+    GLuint VBO = buffers[0];
 
-void RenderPixels(int size, const float pixelData[size], GLuint shaderProgram) {
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
+    glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pixelPosData) + sizeof(pixelColorData), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof pixelPosData, pixelPosData);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof pixelPosData, sizeof pixelColorData, pixelColorData);
 
     // Position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(pos_index, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(pos_index);
 
     // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(col_index, 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof pixelPosData));
+    glEnableVertexAttribArray(col_index);
+}
+
+void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
+
 
     // Render points
     glUseProgram(shaderProgram);
-    glDrawArrays(GL_POINTS, 0, size / 5);
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_POINTS, 0, size);
 
     // Cleanup
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+
+    // glBindVertexArray(0);
+    // glDeleteVertexArrays(1, &VAO);
+    // glDeleteBuffers(1, &VBO);
 }
+
+void GLAPIENTRY
+MessageCallback( GLenum source,
+                 GLenum type,
+                 GLuint id,
+                 GLenum severity,
+                 GLsizei length,
+                 const GLchar* message,
+                 const void* userParam )
+{
+    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+             type, severity, message );
+}
+
 
 int main(void)
 {
+    // glEnable(GL_DEBUG_OUTPUT);
+// During init, enable debug output
+
     GLuint vertex_buffer, program;
     GLint mvp_location, vpos_location, vcol_location;
 
     GLFWwindow* window = OpenWindow();
 
+    //glEnable              ( GL_DEBUG_OUTPUT );
+    //glDebugMessageCallback( MessageCallback, 0 );
+
     // NOTE: OpenGL error checks have been omitted for brevity
 
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //glGenBuffers(1, &vertex_buffer);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
 
     LoadShaders(&program);
 
@@ -244,20 +283,29 @@ int main(void)
     vpos_location = glGetAttribLocation(program, "vPos");
     vcol_location = glGetAttribLocation(program, "vCol");
 
+    GLenum err = glGetError();
+
+    fprintf(stderr, "erreur %d\n", err);
+
+    GLuint VAO;
+
+
+    /*
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), nullptr);
     glEnableVertexAttribArray(vcol_location);
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) (sizeof(float) * 2));
-
-    float (*pixelColors)[WIDTH*HEIGHT*5] = malloc(sizeof (float[WIDTH*HEIGHT*3]));
-    GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH);
+*/
+    float (*pixelColors)[WIDTH*HEIGHT*3] = malloc(sizeof (float[WIDTH*HEIGHT*3]));
+    GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO);
 
     while (!glfwWindowShouldClose(window))
     {
         float ratio;
         int width, height;
+        // mat4x4 m, p, mvp;
 
         glfwGetFramebufferSize(window, &width, &height);
         ratio = (float) width / (float) height;
@@ -265,15 +313,23 @@ int main(void)
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        /*
+        mat4x4_identity(m);
+        mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        mat4x4_mul(mvp, p, m);
+         */
+
         glUseProgram(program);
         //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
         //glDrawArrays(GL_TRIANGLES, 0, vertix_count);
-        RenderPixels(WIDTH*HEIGHT, pixelColors, program );
+        RenderPixels(WIDTH*HEIGHT, program, VAO);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    free(pixelColors);
     glfwDestroyWindow(window);
 
     glfwTerminate();
