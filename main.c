@@ -142,6 +142,8 @@ void LoadShaders(GLuint * program) {
             char infoLog[512];
             glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
             fprintf(stderr, "ERROR: Vertex Shader compilation failed\n%s\n", infoLog);
+        } else {
+            fputs("Vertex Shader compilation succeed\n", stderr);
         }
     }
 
@@ -168,6 +170,9 @@ void LoadShaders(GLuint * program) {
             glGetShaderInfoLog(fragment_shader, 512, NULL, infoLog);
             fprintf(stderr, "ERROR: Fragment Shader compilation failed\n%s\n", infoLog);
 
+        } else {
+            fputs("Fragment Shader compilation succeed\n", stderr);
+
         }
     }
 
@@ -182,16 +187,19 @@ void LoadShaders(GLuint * program) {
     if (!success) {
         glGetProgramInfoLog(*program, 512, NULL, infoLog);
         fprintf(stderr, "ERROR: Shader linking failed\n%s\n", infoLog);
+    } else {
+        fputs("Shader linking succeed\n", stderr);
     }
 }
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int count, float pixelColorData[count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
+void GeneratePixelData(int count, float pixelColorData[static count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
 
-    float pixelPosData[count];
+    float pixelPosData[count * 2];
 
     int j = 0;
+    int k = 0;
     // Example: Add points with different colors and positions
     for (int i = 0; i < count; ++i) {
         float x = (rand() % width) / (float)width * 2.0f - 1.0f;  // Random x in NDC
@@ -202,9 +210,9 @@ void GeneratePixelData(int count, float pixelColorData[count], int height, int w
 
         pixelPosData[j++] =x;
         pixelPosData[j++] =y;
-        pixelColorData[j++] =r;
-        pixelColorData[j++] =g;
-        pixelColorData[j++] =b;
+        pixelColorData[k++] =r;
+        pixelColorData[k++] =g;
+        pixelColorData[k++] =b;
     }
     GLuint buffers[2];
     glGenVertexArrays(1, VAO);
@@ -214,7 +222,7 @@ void GeneratePixelData(int count, float pixelColorData[count], int height, int w
     glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pixelPosData) + sizeof(pixelColorData), NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof pixelPosData + sizeof pixelColorData, NULL, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof pixelPosData, pixelPosData);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof pixelPosData, sizeof pixelColorData, pixelColorData);
 
@@ -279,11 +287,11 @@ int main(void)
 
     LoadShaders(&program);
 
-    mvp_location = glGetUniformLocation(program, "MVP");
+    //mvp_location = glGetUniformLocation(program, "MVP");
     vpos_location = glGetAttribLocation(program, "vPos");
     vcol_location = glGetAttribLocation(program, "vCol");
 
-    fprintf(stderr, "mvp %d\npos %d\ncolor %d\n", mvp_location, vpos_location, vcol_location);
+    fprintf(stderr, "pos %d\ncolor %d\n", vpos_location, vcol_location);
 
     GLenum err = glGetError();
 
@@ -301,6 +309,10 @@ int main(void)
                           sizeof(vertices[0]), (void*) (sizeof(float) * 2));
 */
     float (*pixelColors)[WIDTH*HEIGHT*3] = malloc(sizeof (float[WIDTH*HEIGHT*3]));
+    if(pixelColors == NULL) {
+        fprintf(stderr, "fail to generate color buffer on CPU\n");
+        exit(EXIT_FAILURE);
+    }
     GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO);
 
     while (!glfwWindowShouldClose(window))
