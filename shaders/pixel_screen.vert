@@ -1,9 +1,9 @@
-#version 110
+#version 330 core
 
 uniform mat4 MVP;
-attribute vec3 vCol;
-attribute vec2 vPos;
-varying vec3 fragColor;
+in vec3 vCol;
+in vec2 vPos;
+out vec3 fragColor;
 
 void main()
 {

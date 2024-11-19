@@ -87,8 +87,8 @@ static GLFWwindow* OpenWindow(void)
     // essai avec gles
     // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); // Specify OpenGL ES
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Simple example", nullptr, nullptr);
     if (!window)
@@ -282,6 +282,8 @@ int main(void)
     mvp_location = glGetUniformLocation(program, "MVP");
     vpos_location = glGetAttribLocation(program, "vPos");
     vcol_location = glGetAttribLocation(program, "vCol");
+
+    fprintf(stderr, "mvp %d\npos %d\ncolor %d\n", mvp_location, vpos_location, vcol_location);
 
     GLenum err = glGetError();
 
