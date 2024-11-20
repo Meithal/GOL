@@ -195,9 +195,9 @@ void LoadShaders(GLuint * program) {
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int count, float pixelColorData[static count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
+void GeneratePixelData(int count, float (*pixelColorData)[count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
 
-    float pixelPosData[count * 2];
+    float (*pixelPosData)[count * 2] = malloc(sizeof (float[count*2]));
 
     int j = 0;
     int k = 0;
@@ -209,11 +209,11 @@ void GeneratePixelData(int count, float pixelColorData[static count], int height
         float g = (float)(rand() % 256) / 255.0f; // Random green color
         float b = (float)(rand() % 256) / 255.0f; // Random blue color
 
-        pixelPosData[j++] =x;
-        pixelPosData[j++] =y;
-        pixelColorData[k++] =r;
-        pixelColorData[k++] =g;
-        pixelColorData[k++] =b;
+        (*pixelPosData)[j++] =x;
+        (*pixelPosData)[j++] =y;
+        (*pixelColorData)[k++] =r;
+        (*pixelColorData)[k++] =g;
+        (*pixelColorData)[k++] =b;
     }
     GLuint buffers[2];
     glGenVertexArrays(1, VAO);
@@ -223,17 +223,19 @@ void GeneratePixelData(int count, float pixelColorData[static count], int height
     glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof pixelPosData + sizeof (float) * 3), NULL, GL_STREAM_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof pixelPosData), pixelPosData);
-    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof pixelPosData), sizeof (float) * 3, pixelColorData);
+    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof (float) * 3), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof *pixelPosData), pixelPosData);
+    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), sizeof (float) * 3, pixelColorData);
 
     // Position attribute
     glVertexAttribPointer(pos_index, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(pos_index);
 
     // Color attribute
-    glVertexAttribPointer(col_index, 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof pixelPosData));
+    glVertexAttribPointer(col_index, 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof *pixelPosData));
     glEnableVertexAttribArray(col_index);
+
+    free(pixelPosData);
 }
 
 void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
@@ -249,20 +251,6 @@ void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
     // glBindVertexArray(0);
     // glDeleteVertexArrays(1, &VAO);
     // glDeleteBuffers(1, &VBO);
-}
-
-void GLAPIENTRY
-MessageCallback( GLenum source,
-                 GLenum type,
-                 GLuint id,
-                 GLenum severity,
-                 GLsizei length,
-                 const GLchar* message,
-                 const void* userParam )
-{
-    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-             type, severity, message );
 }
 
 
