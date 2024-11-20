@@ -86,8 +86,8 @@ static GLFWwindow* OpenWindow(void)
         exit(EXIT_FAILURE);
 
     // essai avec gles
-    // glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    // glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); // Specify OpenGL ES
+    //glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    //glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); // Specify OpenGL ES
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
@@ -241,7 +241,7 @@ void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
 
     // Render points
     glUseProgram(shaderProgram);
-    //glBindVertexArray(VAO);
+    glBindVertexArray(VAO);
     glDrawArrays(GL_POINTS, 0, size);
 
     // Cleanup
@@ -278,6 +278,8 @@ int main(void)
 
     //glEnable              ( GL_DEBUG_OUTPUT );
     //glDebugMessageCallback( MessageCallback, 0 );
+
+    glEnable(GL_PROGRAM_POINT_SIZE);
 
     // NOTE: OpenGL error checks have been omitted for brevity
 
@@ -338,7 +340,7 @@ int main(void)
         mat4x4_mul(mvp, p, m);
          */
 
-        glUseProgram(program);
+        //glUseProgram(program);
         //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
         //glDrawArrays(GL_TRIANGLES, 0, vertix_count);
         RenderPixels(WIDTH*HEIGHT, program, VAO);

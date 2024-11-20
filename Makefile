@@ -11,7 +11,7 @@ build:
 glad: .git venv
 	./venv/bin/activate
 	python -m pip install glad
-	glad --profile core --out-path ./glad --api gl=4.6 --generator c-debug
+	glad --profile core --out-path ./glad --api gl=4.1 --generator c-debug
 
 venv:
 	python -m venv venv
