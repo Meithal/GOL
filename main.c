@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "GLFW/glfw3.h"
 
 /*
 static const struct
@@ -141,7 +140,7 @@ void LoadShaders(GLuint * program) {
         glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &compiled);
         if(!compiled) {
             char infoLog[512];
-            glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
+            glGetShaderInfoLog(vertex_shader, 512, nullptr, infoLog);
             fprintf(stderr, "ERROR: Vertex Shader compilation failed\n%s\n", infoLog);
         } else {
             fputs("Vertex Shader compilation succeed\n", stderr);
@@ -168,7 +167,7 @@ void LoadShaders(GLuint * program) {
         glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &compiled);
         if(!compiled) {
             char infoLog[512];
-            glGetShaderInfoLog(fragment_shader, 512, NULL, infoLog);
+            glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
             fprintf(stderr, "ERROR: Fragment Shader compilation failed\n%s\n", infoLog);
 
         } else {
@@ -186,7 +185,7 @@ void LoadShaders(GLuint * program) {
     char infoLog[512];
     glGetProgramiv(*program, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(*program, 512, NULL, infoLog);
+        glGetProgramInfoLog(*program, 512, nullptr, infoLog);
         fprintf(stderr, "ERROR: Shader linking failed\n%s\n", infoLog);
     } else {
         fputs("Shader linking succeed\n", stderr);
@@ -223,7 +222,7 @@ void GeneratePixelData(int count, float (*pixelColorData)[count], int height, in
     glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof (float) * 3), NULL, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof (float) * 3), nullptr, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof *pixelPosData), pixelPosData);
     glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), sizeof (float) * 3, pixelColorData);
 
@@ -311,12 +310,12 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        float ratio;
+        //float ratio;
         int width, height;
         // mat4x4 m, p, mvp;
 
         glfwGetFramebufferSize(window, &width, &height);
-        ratio = (float) width / (float) height;
+        //ratio = (float) width / (float) height;
 
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
