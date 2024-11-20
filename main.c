@@ -308,6 +308,7 @@ int main(void)
     }
     GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO);
 
+    glClearColor(.5f, 0,0, 1);
     while (!glfwWindowShouldClose(window))
     {
         //float ratio;
