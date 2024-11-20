@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "GLFW/glfw3.h"
 
 /*
 static const struct
@@ -202,11 +203,11 @@ void GeneratePixelData(int count, float pixelColorData[static count], int height
     int k = 0;
     // Example: Add points with different colors and positions
     for (int i = 0; i < count; ++i) {
-        float x = (rand() % width) / (float)width * 2.0f - 1.0f;  // Random x in NDC
-        float y = (rand() % height) / (float)height * 2.0f - 1.0f; // Random y in NDC
-        float r = (rand() % 256) / 255.0f; // Random red color
-        float g = (rand() % 256) / 255.0f; // Random green color
-        float b = (rand() % 256) / 255.0f; // Random blue color
+        float x = (float)(rand() % width) / (float)width * 2.0f - 1.0f;  // Random x in NDC
+        float y = (float)(rand() % height) / (float)height * 2.0f - 1.0f; // Random y in NDC
+        float r = (float)(rand() % 256) / 255.0f; // Random red color
+        float g = (float)(rand() % 256) / 255.0f; // Random green color
+        float b = (float)(rand() % 256) / 255.0f; // Random blue color
 
         pixelPosData[j++] =x;
         pixelPosData[j++] =y;
@@ -222,9 +223,9 @@ void GeneratePixelData(int count, float pixelColorData[static count], int height
     glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, sizeof pixelPosData + sizeof pixelColorData, NULL, GL_STREAM_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof pixelPosData, pixelPosData);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof pixelPosData, sizeof pixelColorData, pixelColorData);
+    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof pixelPosData + sizeof (float) * 3), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof pixelPosData), pixelPosData);
+    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof pixelPosData), sizeof (float) * 3, pixelColorData);
 
     // Position attribute
     glVertexAttribPointer(pos_index, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -240,7 +241,7 @@ void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
 
     // Render points
     glUseProgram(shaderProgram);
-    glBindVertexArray(VAO);
+    //glBindVertexArray(VAO);
     glDrawArrays(GL_POINTS, 0, size);
 
     // Cleanup
@@ -270,8 +271,8 @@ int main(void)
     // glEnable(GL_DEBUG_OUTPUT);
 // During init, enable debug output
 
-    GLuint vertex_buffer, program;
-    GLint mvp_location, vpos_location, vcol_location;
+    GLuint program;
+    GLint vpos_location, vcol_location;
 
     GLFWwindow* window = OpenWindow();
 
@@ -284,6 +285,9 @@ int main(void)
     //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    GLfloat maxPointSize[2];
+    glGetFloatv(GL_POINT_SIZE_RANGE, maxPointSize);
+    printf("Maximum point size: %f, %f\n", maxPointSize[0], maxPointSize[1]);
 
     LoadShaders(&program);
 

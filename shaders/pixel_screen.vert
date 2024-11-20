@@ -11,6 +11,6 @@ void main()
 {
     gl_Position = /*MVP * */vec4(vPos, 0.0, 1.0);
 
-    gl_PointSize = 5.0;
+    gl_PointSize = 64.0;
     fragColor = vCol;
 }
