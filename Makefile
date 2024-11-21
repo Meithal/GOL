@@ -21,4 +21,4 @@ venv:
 	git init
 
 glfw/CMakeLists.txt:
-	git submodule add --depth 1 https://github.com/glfw/glfw glfw
+	git submodule update --init --recursive --depth 1
