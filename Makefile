@@ -1,6 +1,6 @@
 .PHONY: GOL
 
-GOL: glad glfw build
+GOL: glad glfw/CMakeLists.txt build
 	cmake --build build
 	build/GOL
 
@@ -20,5 +20,5 @@ venv:
 .git:
 	git init
 
-glfw:
+glfw/CMakeLists.txt:
 	git submodule add --depth 1 https://github.com/glfw/glfw glfw
