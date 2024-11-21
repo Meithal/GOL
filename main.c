@@ -194,7 +194,7 @@ void LoadShaders(GLuint * program) {
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int count, float (*pixelColorData)[count], int height, int width, int pos_index, int col_index, GLuint *VAO) {
+void GeneratePixelData(int count, float (*pixelColorData)[count], int height, int width, int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
 
     float (*pixelPosData)[count * 2] = malloc(sizeof (float[count*2]));
 
@@ -216,11 +216,10 @@ void GeneratePixelData(int count, float (*pixelColorData)[count], int height, in
     }
     GLuint buffers[2];
     glGenVertexArrays(1, VAO);
-    glGenBuffers(2, buffers);
-    GLuint VBO = buffers[0];
+    glGenBuffers(1, VBO);
 
     glBindVertexArray(*VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
     glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof (float) * 3), nullptr, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof *pixelPosData), pixelPosData);
@@ -290,7 +289,7 @@ int main(void)
 
     fprintf(stderr, "erreur %d\n", err);
 
-    GLuint VAO;
+    GLuint VAO, VBO;
 
 
     /*
@@ -306,7 +305,7 @@ int main(void)
         fprintf(stderr, "fail to generate color buffer on CPU\n");
         exit(EXIT_FAILURE);
     }
-    GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO);
+    GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO, &VBO);
 
     glClearColor(.5f, 0,0, 1);
     while (!glfwWindowShouldClose(window))
@@ -319,7 +318,7 @@ int main(void)
         //ratio = (float) width / (float) height;
 
         glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
         /*
         mat4x4_identity(m);

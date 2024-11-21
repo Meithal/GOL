@@ -3,9 +3,9 @@ project(GOL C)
 
 set(CMAKE_C_STANDARD 23)
 
-find_package(OpenGL REQUIRED)
+# find_package(OpenGL REQUIRED)
 
-add_executable(GOL main.c glad/src/glad.c glfw/deps/linmath.h)
+add_executable(GOL main.c glad/src/glad.c)
 
 target_include_directories(GOL PUBLIC glad/include)
 
