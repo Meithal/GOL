@@ -194,14 +194,14 @@ void LoadShaders(GLuint * program) {
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int count, float (*pixelColorData)[count], int height, int width, int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
+void GeneratePixelData(int height, int width, float (*pixelColorData)[height*width*3], int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
 
-    float (*pixelPosData)[count * 2] = malloc(sizeof (float[count*2]));
+    float (*pixelPosData)[height*width * 2] = malloc(sizeof (float[height*width*2]));
 
     int j = 0;
     int k = 0;
     // Example: Add points with different colors and positions
-    for (int i = 0; i < count; ++i) {
+    for (int i = 0; i < height*width; ++i) {
         float x = (float)(rand() % width) / (float)width * 2.0f - 1.0f;  // Random x in NDC
         float y = (float)(rand() % height) / (float)height * 2.0f - 1.0f; // Random y in NDC
         float r = (float)(rand() % 256) / 255.0f; // Random red color
@@ -221,9 +221,9 @@ void GeneratePixelData(int count, float (*pixelColorData)[count], int height, in
     glBindVertexArray(*VAO);
     glBindBuffer(GL_ARRAY_BUFFER, *VBO);
     //glBufferData(GL_ARRAY_BUFFER, size* sizeof(float), pixelData, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof (float) * 3), nullptr, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData + sizeof *pixelColorData), nullptr, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, (long)(sizeof *pixelPosData), pixelPosData);
-    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), sizeof (float) * 3, pixelColorData);
+    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), (long)(sizeof *pixelColorData), pixelColorData);
 
     // Position attribute
     glVertexAttribPointer(pos_index, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -305,7 +305,7 @@ int main(void)
         fprintf(stderr, "fail to generate color buffer on CPU\n");
         exit(EXIT_FAILURE);
     }
-    GeneratePixelData(WIDTH*HEIGHT, pixelColors, HEIGHT, WIDTH, vpos_location, vcol_location, &VAO, &VBO);
+    GeneratePixelData(HEIGHT, WIDTH, pixelColors, vpos_location, vcol_location, &VAO, &VBO);
 
     glClearColor(.5f, 0,0, 1);
     while (!glfwWindowShouldClose(window))
