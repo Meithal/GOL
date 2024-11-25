@@ -5,51 +5,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-/*
-static const struct
-{
-    float x, y;
-} vertices_pos[3] =
-        {
-                { -0.6f, -0.4f },
-                {  0.6f, -0.4f },
-                {   0.f,  0.6f }
-        };
-
-static const struct {
-    float r, g, b;
-} vertices_colors[] = {
-        { 1.f, 0.f, 0.f },
-        { 0.f, 1.f, 0.f },
-        { 0.f, 0.f, 1.f }
-};
-
-int vertix_count = sizeof vertices_pos / sizeof vertices_pos[0];
-*/
 static int WIDTH = 640;
 static int HEIGHT = 320;
 
-/*
-static const char* vertex_shader_text =
-        "#version 110\n"
-        "uniform mat4 MVP;\n"
-        "attribute vec3 vCol;\n"
-        "attribute vec2 vPos;\n"
-        "varying vec3 color;\n"
-        "void main()\n"
-        "{\n"
-        "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-        "    color = vCol;\n"
-        "}\n";
-
-static const char* fragment_shader_text =
-        "#version 110\n"
-        "varying vec3 color;\n"
-        "void main()\n"
-        "{\n"
-        "    gl_FragColor = vec4(color, 1.0);\n"
-        "}\n";
-*/
 
 static void error_callback(int error, const char* description)
 {
@@ -261,12 +219,14 @@ void InitWolf(int height, int width, int (*pixelColors)[height][width], signed c
         (*pixelColors)[0][i] = 0;
     }
     (*pixelColors)[0][width/2] = 1;
+
     for (int y = 1; y < height; ++y) {
         for (int x = 0; x < width; x++) {
             int previous = ((*pixelColors)[y-1][(width + x-1) % width] << 2)
                     + ((*pixelColors)[y-1][x] << 1) + ((*pixelColors)[y-1][(x+1) % width] << 0);
             assert(previous >= 0 && previous <= 7);
-            int new_value = (_Bool )pattern & (7 - (1 << previous));
+
+            int new_value = (_Bool )(pattern & ((1 << previous)));
             (*pixelColors)[y][x] = new_value;
         }
     }
@@ -282,17 +242,10 @@ int main(void)
 
     GLFWwindow* window = OpenWindow();
 
-    //glEnable              ( GL_DEBUG_OUTPUT );
-    //glDebugMessageCallback( MessageCallback, 0 );
-
     glEnable(GL_PROGRAM_POINT_SIZE);
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
     // NOTE: OpenGL error checks have been omitted for brevity
-
-    //glGenBuffers(1, &vertex_buffer);
-    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     GLfloat maxPointSize[2];
     glGetFloatv(GL_POINT_SIZE_RANGE, maxPointSize);
@@ -312,22 +265,13 @@ int main(void)
 
     GLuint VAO, VBO;
 
-
-    /*
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), nullptr);
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), (void*) (sizeof(float) * 2));
-*/
     int (*pixelColors)[HEIGHT][WIDTH] = malloc(sizeof (int[HEIGHT][WIDTH]));
     if(pixelColors == NULL) {
         fprintf(stderr, "fail to generate color buffer on CPU\n");
         exit(EXIT_FAILURE);
     }
 
-    InitWolf(HEIGHT, WIDTH, pixelColors, 80);
+    InitWolf(HEIGHT, WIDTH, pixelColors, 102);
 
     GeneratePixelData(HEIGHT, WIDTH, pixelColors, vpos_location, vcol_location, &VAO, &VBO);
 
