@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 /*
 static const struct
@@ -26,7 +27,7 @@ static const struct {
 int vertix_count = sizeof vertices_pos / sizeof vertices_pos[0];
 */
 static int WIDTH = 640;
-static int HEIGHT = 480;
+static int HEIGHT = 320;
 
 /*
 static const char* vertex_shader_text =
@@ -89,6 +90,8 @@ static GLFWwindow* OpenWindow(void)
     //glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API); // Specify OpenGL ES
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Simple example", nullptr, nullptr);
     if (!window)
@@ -194,22 +197,25 @@ void LoadShaders(GLuint * program) {
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-void GeneratePixelData(int height, int width, float (*pixelColorData)[height*width*3], int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
+void GeneratePixelData(int height, int width, int (*pixelStateData)[height][width],
+                       int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
 
     float (*pixelPosData)[height*width * 2] = malloc(sizeof (float[height*width*2]));
+    float (*pixelColorData)[height*width * 3] = malloc(sizeof (float[height*width*3]));
 
     int j = 0;
     int k = 0;
     // Example: Add points with different colors and positions
     for (int i = 0; i < height*width; ++i) {
-        float x = (float)(rand() % width) / (float)width * 2.0f - 1.0f;  // Random x in NDC
-        float y = (float)(rand() % height) / (float)height * 2.0f - 1.0f; // Random y in NDC
-        float r = (float)(rand() % 256) / 255.0f; // Random red color
-        float g = (float)(rand() % 256) / 255.0f; // Random green color
-        float b = (float)(rand() % 256) / 255.0f; // Random blue color
+        bool is_on = (*pixelStateData)[i / width][i % width];
+        float x = (float)(i % width) / (float)width * 2.0f - 1.0f;
+        float y = (float)(i / width) / (float)height * 2.0f - 1.0f;
+        float r = is_on ? 1.f : 0x18/255.f;
+        float g = is_on ? 1.f : 0x18/255.f;
+        float b = is_on ? 1.f : 0x18/255.f;
 
         (*pixelPosData)[j++] =x;
-        (*pixelPosData)[j++] =y;
+        (*pixelPosData)[j++] =-y;
         (*pixelColorData)[k++] =r;
         (*pixelColorData)[k++] =g;
         (*pixelColorData)[k++] =b;
@@ -237,8 +243,6 @@ void GeneratePixelData(int height, int width, float (*pixelColorData)[height*wid
 }
 
 void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
-
-
     // Render points
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
@@ -251,6 +255,22 @@ void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
     // glDeleteBuffers(1, &VBO);
 }
 
+void InitWolf(int height, int width, int (*pixelColors)[height][width], signed char pattern) {
+    //srand(42);
+    for (int i = 0; i < width; i++) {
+        (*pixelColors)[0][i] = 0;
+    }
+    (*pixelColors)[0][width/2] = 1;
+    for (int y = 1; y < height; ++y) {
+        for (int x = 0; x < width; x++) {
+            int previous = ((*pixelColors)[y-1][(width + x-1) % width] << 2)
+                    + ((*pixelColors)[y-1][x] << 1) + ((*pixelColors)[y-1][(x+1) % width] << 0);
+            assert(previous >= 0 && previous <= 7);
+            int new_value = (_Bool )pattern & (7 - (1 << previous));
+            (*pixelColors)[y][x] = new_value;
+        }
+    }
+}
 
 int main(void)
 {
@@ -266,6 +286,7 @@ int main(void)
     //glDebugMessageCallback( MessageCallback, 0 );
 
     glEnable(GL_PROGRAM_POINT_SIZE);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
 
     // NOTE: OpenGL error checks have been omitted for brevity
 
@@ -300,14 +321,17 @@ int main(void)
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) (sizeof(float) * 2));
 */
-    float (*pixelColors)[WIDTH*HEIGHT*3] = malloc(sizeof (float[WIDTH*HEIGHT*3]));
+    int (*pixelColors)[HEIGHT][WIDTH] = malloc(sizeof (int[HEIGHT][WIDTH]));
     if(pixelColors == NULL) {
         fprintf(stderr, "fail to generate color buffer on CPU\n");
         exit(EXIT_FAILURE);
     }
+
+    InitWolf(HEIGHT, WIDTH, pixelColors, 80);
+
     GeneratePixelData(HEIGHT, WIDTH, pixelColors, vpos_location, vcol_location, &VAO, &VBO);
 
-    glClearColor(.5f, 0,0, 1);
+    glClearColor(0x18/255.f, 0x18/255.f,0x18/255.f, 1);
     while (!glfwWindowShouldClose(window))
     {
         //float ratio;
@@ -318,7 +342,7 @@ int main(void)
         //ratio = (float) width / (float) height;
 
         glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         /*
         mat4x4_identity(m);
@@ -331,6 +355,8 @@ int main(void)
         //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
         //glDrawArrays(GL_TRIANGLES, 0, vertix_count);
         RenderPixels(WIDTH*HEIGHT, program, VAO);
+
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
