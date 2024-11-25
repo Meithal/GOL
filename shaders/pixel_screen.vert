@@ -1,6 +1,7 @@
 #version 330 core
 
 //uniform mat4 MVP;
+uniform float u_yDecal;
 
 in vec3 vCol;
 in vec2 vPos;

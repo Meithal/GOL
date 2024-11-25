@@ -34,7 +34,7 @@ long getFileSize(const char *filename) {
     return fileSize;
 }
 
-static GLFWwindow* OpenWindow(void)
+static GLFWwindow* OpenWindow(const char * title, bool is_fullscreen, bool has_vertical_sync)
 {
     GLFWwindow* window;
 
@@ -51,7 +51,9 @@ static GLFWwindow* OpenWindow(void)
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
 
 
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Simple example", nullptr, nullptr);
+    window = glfwCreateWindow(WIDTH, HEIGHT, title,
+                              is_fullscreen ? glfwGetPrimaryMonitor(): nullptr, nullptr
+                              );
     if (!window)
     {
         glfwTerminate();
@@ -73,7 +75,7 @@ static GLFWwindow* OpenWindow(void)
         printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
     }
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(has_vertical_sync ? 1 : 0);
 
     return window;
 }
@@ -167,7 +169,7 @@ void GeneratePixelData(int height, int width, int (*pixelStateData)[height][widt
     for (int i = 0; i < height*width; ++i) {
         bool is_on = (*pixelStateData)[i / width][i % width];
         float x = (float)(i % width) / (float)width * 2.0f - 1.0f;
-        float y = (float)(i / width) / (float)height * 2.0f - 1.0f;
+        float y = (float)(int)(i / width) / (float)height * 2.0f - 1.0f;
         float r = is_on ? 1.f : 0x18/255.f;
         float g = is_on ? 1.f : 0x18/255.f;
         float b = is_on ? 1.f : 0x18/255.f;
@@ -178,7 +180,7 @@ void GeneratePixelData(int height, int width, int (*pixelStateData)[height][widt
         (*pixelColorData)[k++] =g;
         (*pixelColorData)[k++] =b;
     }
-    GLuint buffers[2];
+
     glGenVertexArrays(1, VAO);
     glGenBuffers(1, VBO);
 
@@ -200,47 +202,83 @@ void GeneratePixelData(int height, int width, int (*pixelStateData)[height][widt
     free(pixelPosData);
 }
 
-void RenderPixels(int size, GLuint shaderProgram, GLuint VAO) {
+void RenderPixels(int size, GLuint shaderProgram, GLuint VAO,
+                  int height, int width, int (*pixelStateData)[height][width]) {
+
+    float (*pixelPosData)[height*width * 2] = malloc(sizeof (float[height*width*2]));
+    float (*pixelColorData)[height*width * 3] = malloc(sizeof (float[height*width*3]));
+
+    int k = 0;
+    for (int i = 0; i < height*width; ++i) {
+        bool is_on = (*pixelStateData)[i / width][i % width];
+        float r = is_on ? 1.f : 0x18/255.f;
+        float g = is_on ? 1.f : 0x18/255.f;
+        float b = is_on ? 1.f : 0x18/255.f;
+
+        (*pixelColorData)[k++] =r;
+        (*pixelColorData)[k++] =g;
+        (*pixelColorData)[k++] =b;
+    }
+
     // Render points
+    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), (long)(sizeof *pixelColorData), pixelColorData);
+
+
     glUseProgram(shaderProgram);
-    glBindVertexArray(VAO);
+    //glBindVertexArray(VAO);
     glDrawArrays(GL_POINTS, 0, size);
 
     // Cleanup
+
+    free(pixelPosData);
+    free(pixelColorData);
 
     // glBindVertexArray(0);
     // glDeleteVertexArrays(1, &VAO);
     // glDeleteBuffers(1, &VBO);
 }
 
+void IterateWolf(int height, int width, int (*pixelColors)[height][width], signed char pattern, int line)
+{
+    for (int x = 0; x < width; x++) {
+        int previous = ((*pixelColors)[(height + line-1) % height][(width + x-1) % width] << 2)
+                       + ((*pixelColors)[(height + line-1) % height][x] << 1) + ((*pixelColors)[(height + line-1) % height][(x+1) % width] << 0);
+        assert(previous >= 0 && previous <= 7);
+
+        int new_value = (_Bool )(pattern & ((1 << previous)));
+        (*pixelColors)[line][x] = new_value;
+    }
+}
+
 void InitWolf(int height, int width, int (*pixelColors)[height][width], signed char pattern) {
-    //srand(42);
+    srand(42);
     for (int i = 0; i < width; i++) {
+        //(*pixelColors)[0][i] = rand() & 1;
         (*pixelColors)[0][i] = 0;
     }
     (*pixelColors)[0][width/2] = 1;
 
     for (int y = 1; y < height; ++y) {
-        for (int x = 0; x < width; x++) {
-            int previous = ((*pixelColors)[y-1][(width + x-1) % width] << 2)
-                    + ((*pixelColors)[y-1][x] << 1) + ((*pixelColors)[y-1][(x+1) % width] << 0);
-            assert(previous >= 0 && previous <= 7);
-
-            int new_value = (_Bool )(pattern & ((1 << previous)));
-            (*pixelColors)[y][x] = new_value;
-        }
+        IterateWolf(height, width, pixelColors, pattern, y);
     }
 }
 
-int main(void)
-{
-    // glEnable(GL_DEBUG_OUTPUT);
-// During init, enable debug output
-
+void LaunchWolfram(signed char seed) {
     GLuint program;
     GLint vpos_location, vcol_location;
 
-    GLFWwindow* window = OpenWindow();
+    char title[200] = { 0 };
+    sprintf(title, "Seed %d (%c%c%c%c%c%c%c%C)", seed
+    , "01"[(_Bool)(seed & (1 << 7))]
+    , "01"[(_Bool)(seed & (1 << 6))]
+    , "01"[(_Bool)(seed & (1 << 5))]
+    , "01"[(_Bool)(seed & (1 << 4))]
+    , "01"[(_Bool)(seed & (1 << 3))]
+    , "01"[(_Bool)(seed & (1 << 2))]
+    , "01"[(_Bool)(seed & (1 << 1))]
+    , "01"[(_Bool)(seed & (1 << 0))]
+    );
+    GLFWwindow* window = OpenWindow(title, false, true);
 
     glEnable(GL_PROGRAM_POINT_SIZE);
     //glEnable(GL_FRAMEBUFFER_SRGB);
@@ -271,11 +309,13 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    InitWolf(HEIGHT, WIDTH, pixelColors, 102);
+    InitWolf(HEIGHT, WIDTH, pixelColors, seed);
 
     GeneratePixelData(HEIGHT, WIDTH, pixelColors, vpos_location, vcol_location, &VAO, &VBO);
 
     glClearColor(0x18/255.f, 0x18/255.f,0x18/255.f, 1);
+
+    int line = 0;
     while (!glfwWindowShouldClose(window))
     {
         //float ratio;
@@ -285,6 +325,7 @@ int main(void)
         glfwGetFramebufferSize(window, &width, &height);
         //ratio = (float) width / (float) height;
 
+        // resize if window is resized
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -298,8 +339,48 @@ int main(void)
         //glUseProgram(program);
         //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
         //glDrawArrays(GL_TRIANGLES, 0, vertix_count);
-        RenderPixels(WIDTH*HEIGHT, program, VAO);
 
+        IterateWolf(HEIGHT, WIDTH, pixelColors, seed, line++);
+        line %= HEIGHT;
+        RenderPixels(WIDTH*HEIGHT, program, VAO, HEIGHT, WIDTH, pixelColors);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    free(pixelColors);
+
+    glfwDestroyWindow(window);
+
+    glfwTerminate();
+}
+
+void LaunchConway(signed char seed)
+{
+    int (*pixelColors)[HEIGHT][WIDTH] = malloc(sizeof (int[HEIGHT][WIDTH]));
+    if(pixelColors == NULL) {
+        fprintf(stderr, "fail to generate color buffer on CPU\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //InitConway(HEIGHT, WIDTH, pixelColors, seed);
+
+
+    GLFWwindow* window = OpenWindow("GOL", false, true);
+
+    while (!glfwWindowShouldClose(window))
+    {
+        int width, height;
+
+        glfwGetFramebufferSize(window, &width, &height);
+
+        glViewport(0, 0, width, height);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+
+        //IterateConway(HEIGHT, WIDTH, pixelColors, seed, line++);
+        //RenderPixels(WIDTH*HEIGHT, program, VAO, HEIGHT, WIDTH, pixelColors);
 
 
         glfwSwapBuffers(window);
@@ -307,8 +388,16 @@ int main(void)
     }
 
     free(pixelColors);
+
     glfwDestroyWindow(window);
 
     glfwTerminate();
+}
+
+int main(void)
+{
+    //LaunchConway(90);
+    LaunchWolfram(90);
+
     exit(EXIT_SUCCESS);
 }
