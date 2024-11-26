@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 static int WIDTH = 640;
 static int HEIGHT = 320;
@@ -80,7 +81,7 @@ static GLFWwindow* OpenWindow(const char * title, bool is_fullscreen, bool has_v
     return window;
 }
 
-void LoadShaders(GLuint * program) {
+void LoadShaders(GLuint * program, GLint * vpos_location, GLint * vcol_location) {
 
     GLuint vertex_shader, fragment_shader;
 
@@ -153,6 +154,17 @@ void LoadShaders(GLuint * program) {
     } else {
         fputs("Shader linking succeed\n", stderr);
     }
+
+    //mvp_location = glGetUniformLocation(program, "MVP");
+    *vpos_location = glGetAttribLocation(*program, "vPos");
+    *vcol_location = glGetAttribLocation(*program, "vCol");
+
+    //fprintf(stderr, "pos %d\ncolor %d\n", vpos_location, vcol_location);
+
+    GLenum err = glGetError();
+
+    fprintf(stderr, "erreur %d\n", err);
+
 }
 
 
@@ -289,17 +301,7 @@ void LaunchWolfram(signed char seed) {
     glGetFloatv(GL_POINT_SIZE_RANGE, maxPointSize);
     printf("Maximum point size: %f, %f\n", maxPointSize[0], maxPointSize[1]);
 
-    LoadShaders(&program);
-
-    //mvp_location = glGetUniformLocation(program, "MVP");
-    vpos_location = glGetAttribLocation(program, "vPos");
-    vcol_location = glGetAttribLocation(program, "vCol");
-
-    fprintf(stderr, "pos %d\ncolor %d\n", vpos_location, vcol_location);
-
-    GLenum err = glGetError();
-
-    fprintf(stderr, "erreur %d\n", err);
+    LoadShaders(&program, &vpos_location, &vcol_location);
 
     GLuint VAO, VBO;
 
@@ -355,18 +357,105 @@ void LaunchWolfram(signed char seed) {
     glfwTerminate();
 }
 
+
+void RenderConway(int size, GLuint shaderProgram, GLuint VAO,
+                  int height, int width, int (*pixelStateData)[height][width]) {
+
+    float (*pixelPosData)[height*width * 2] = malloc(sizeof (float[height*width*2]));
+    float (*pixelColorData)[height*width * 3] = malloc(sizeof (float[height*width*3]));
+
+    int k = 0;
+    for (int i = 0; i < height*width; ++i) {
+        bool is_on = (*pixelStateData)[i / width][i % width];
+        float r = is_on ? 1.f : 0x18/255.f;
+        float g = is_on ? 1.f : 0x18/255.f;
+        float b = is_on ? 1.f : 0x18/255.f;
+
+        (*pixelColorData)[k++] =r;
+        (*pixelColorData)[k++] =g;
+        (*pixelColorData)[k++] =b;
+    }
+
+    // Render points
+    glBufferSubData(GL_ARRAY_BUFFER, (long)(sizeof *pixelPosData), (long)(sizeof *pixelColorData), pixelColorData);
+
+
+    glUseProgram(shaderProgram);
+    //glBindVertexArray(VAO);
+    glDrawArrays(GL_POINTS, 0, size);
+
+    // Cleanup
+
+    free(pixelPosData);
+    free(pixelColorData);
+
+    // glBindVertexArray(0);
+    // glDeleteVertexArrays(1, &VAO);
+    // glDeleteBuffers(1, &VBO);
+}
+
+
+void InitConway(int height, int width, int (*pixelColors)[height][width], signed char pattern) {
+    srand(pattern);
+    if(pattern == 0) {
+        memset(*pixelColors, 0, sizeof *pixelColors);
+        // put a glider
+        (*pixelColors)[0][0] = 1;
+        (*pixelColors)[1][1] = 1;
+        (*pixelColors)[1][2] = 1;
+        (*pixelColors)[2][0] = 1;
+        (*pixelColors)[2][1] = 1;
+    } else {
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; x++) {
+                (*pixelColors)[y][x] = rand() & 1;
+            }
+        }
+    }
+}
+
+void IterateConway(
+        int height, int width, int (*pixelColors)[height][width],
+        int (*newPixelColors)[height][width], int (*rule)(int, int)) {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; x++) {
+            int moore = (*pixelColors)[(y + height -1)%height][(x+width-1)%width] + (*pixelColors)[(y + height -1)%height][x] + (*pixelColors)[(y + height -1)%height][(x+1)%width] +
+                    (*pixelColors)[y][(x+width-1)%width] + (*pixelColors)[y][(x+1)%width] +
+                    (*pixelColors)[(y+1)%height][(x+width-1)%width] + (*pixelColors)[(y+1)%height][x] + (*pixelColors)[(y+1)%height][(x+1)%width];
+            (*newPixelColors)[y][x] = rule((*pixelColors)[y][x], moore);
+        }
+    }
+
+    memcpy(pixelColors, newPixelColors, sizeof *newPixelColors);
+}
+
+static int conway_rule(int current_state, int moore_number) {
+    if (current_state && (moore_number == 2 || moore_number == 3))
+        return 1;
+    if (!current_state && moore_number == 3)
+        return 1;    return 0;
+}
+
 void LaunchConway(signed char seed)
 {
     int (*pixelColors)[HEIGHT][WIDTH] = malloc(sizeof (int[HEIGHT][WIDTH]));
-    if(pixelColors == NULL) {
+    int (*newPixelColors)[HEIGHT][WIDTH] = malloc(sizeof (int[HEIGHT][WIDTH]));
+    if(pixelColors == NULL || newPixelColors == NULL) {
         fprintf(stderr, "fail to generate color buffer on CPU\n");
         exit(EXIT_FAILURE);
     }
 
-    //InitConway(HEIGHT, WIDTH, pixelColors, seed);
-
+    InitConway(HEIGHT, WIDTH, pixelColors, seed);
 
     GLFWwindow* window = OpenWindow("GOL", false, true);
+    GLuint program, VAO, VBO;
+    GLint vpos_location, vcol_location;
+
+    LoadShaders(&program, &vpos_location, &vcol_location);
+
+    GeneratePixelData(HEIGHT, WIDTH, pixelColors, vpos_location, vcol_location, &VAO, &VBO);
+
+    glClearColor(0x18/255.f, 0x18/255.f,0x18/255.f, 1);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -378,16 +467,15 @@ void LaunchConway(signed char seed)
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-
-        //IterateConway(HEIGHT, WIDTH, pixelColors, seed, line++);
-        //RenderPixels(WIDTH*HEIGHT, program, VAO, HEIGHT, WIDTH, pixelColors);
-
+        IterateConway(HEIGHT, WIDTH, pixelColors, newPixelColors, conway_rule);
+        RenderConway(WIDTH*HEIGHT, program, VAO, HEIGHT, WIDTH, pixelColors);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     free(pixelColors);
+    free(newPixelColors);
 
     glfwDestroyWindow(window);
 
@@ -396,8 +484,8 @@ void LaunchConway(signed char seed)
 
 int main(void)
 {
-    //LaunchConway(90);
-    LaunchWolfram(90);
+    LaunchConway(90);
+    //LaunchWolfram(90);
 
     exit(EXIT_SUCCESS);
 }
