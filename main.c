@@ -275,12 +275,12 @@ void InitWolf(int height, int width, int (*pixelColors)[height][width], signed c
     }
 }
 
-void LaunchWolfram(signed char seed) {
+void LaunchWolfram(unsigned char seed) {
     GLuint program;
     GLint vpos_location, vcol_location;
 
     char title[200] = { 0 };
-    sprintf(title, "Seed %d (%c%c%c%c%c%c%c%C)", seed
+    sprintf(title, "Seed %u (%c%c%c%c%c%c%c%C)", seed
     , "01"[(_Bool)(seed & (1 << 7))]
     , "01"[(_Bool)(seed & (1 << 6))]
     , "01"[(_Bool)(seed & (1 << 5))]
@@ -485,7 +485,8 @@ void LaunchConway(signed char seed)
 int main(void)
 {
     LaunchConway(90);
-    //LaunchWolfram(90);
+    for(unsigned char i = 0; i< 255; i++)
+        LaunchWolfram(i);
 
     exit(EXIT_SUCCESS);
 }
