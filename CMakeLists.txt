@@ -5,7 +5,16 @@ set(CMAKE_C_STANDARD 23)
 
 # find_package(OpenGL REQUIRED)
 
-add_executable(GOL main.c glad/src/glad.c)
+add_executable(GOL
+        main.c
+        glad/src/glad.c
+        smoothlife.c
+        smoothlife.h
+        util_glfw.c
+        util_glfw.h
+        lenia.c
+        lenia.h
+        raffler.c)
 
 target_include_directories(GOL PUBLIC glad/include)
 
