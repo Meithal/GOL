@@ -54,7 +54,7 @@ void LaunchWolfram(unsigned char seed) {
     , "01"[(_Bool)(seed & (1 << 1))]
     , "01"[(_Bool)(seed & (1 << 0))]
     );
-    GLFWwindow* window = OpenWindow(title, WIDTH, HEIGHT, true, false);
+    GLFWwindow* window = OpenWindow(title, WIDTH, HEIGHT, false, true);
 
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -261,13 +261,15 @@ int main(void)
     //LaunchConway(90);
 //    for(unsigned char i = 0; i< 255; i++)
 //        LaunchConway(i);
-    //for(unsigned char i = 0; i< 255; i++)
-    //    LaunchWolfram(i);
-    //LaunchWolfram(90);
+    for(unsigned char i = 160; i< 255; i++)
+        LaunchWolfram(i);
+    //LaunchWolfram(135);
 
-    LaunchSmoothWorld(90);
+    //LaunchSmoothWorld(90);
+
+    //LaunchRafler();
 
 
-    LaunchLenia(90);
+    //LaunchLenia(90);
     exit(EXIT_SUCCESS);
 }

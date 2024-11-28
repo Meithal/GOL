@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.29)
-project(GOL C)
+project(GOL C CXX)
 
 set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
 
 # find_package(OpenGL REQUIRED)
 
@@ -14,7 +15,7 @@ add_executable(GOL
         util_glfw.h
         lenia.c
         lenia.h
-        raffler.c)
+        )
 
 target_include_directories(GOL PUBLIC glad/include)
 
@@ -47,3 +48,28 @@ add_custom_command(
 # Add a custom target that depends on the shaders to ensure they are copied
 add_custom_target(copy_shaders ALL DEPENDS ${SHADER_BUILD_DIR})
 ADD_DEPENDENCIES ( GOL copy_shaders )
+
+add_executable(Rafler
+        raffler.c
+        rafler.h
+        glad/src/glad.c
+)
+
+target_include_directories(Rafler PRIVATE glfw/include)
+target_include_directories(Rafler PRIVATE glfw/deps)
+target_link_libraries(Rafler PRIVATE glfw)
+target_include_directories(Rafler PUBLIC glad/include)
+
+ADD_DEPENDENCIES ( Rafler copy_shaders )
+
+add_executable(Mandel
+        mandel.cpp
+        glad/src/glad.c
+)
+
+target_include_directories(Mandel PRIVATE glfw/include)
+target_include_directories(Mandel PRIVATE glfw/deps)
+target_link_libraries(Mandel PRIVATE glfw)
+target_include_directories(Mandel PUBLIC glad/include)
+
+ADD_DEPENDENCIES ( Mandel copy_shaders )
