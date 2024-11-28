@@ -104,6 +104,8 @@ int main() {
     if (!success) {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         printf("Shader program linking error: %s\n", infoLog);
+    } else {
+        printf("Shader program linking success\n\n");
     }
 
     // Cleanup shaders (no longer needed after linking)

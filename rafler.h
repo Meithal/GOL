@@ -5,6 +5,6 @@
 #ifndef GOL_RAFLER_H
 #define GOL_RAFLER_H
 
-int LaunchRafler();
+//int LaunchRafler();
 
 #endif //GOL_RAFLER_H

@@ -17,7 +17,7 @@ static int HEIGHT = 600;
 static float MIN_PERP = 1.5f;
 static float MAX_PERP = 2.9999f;
 static float MIN_SPAWN = 2.05f;
-static float MAX_SPAWN = 5.1f;
+static float MAX_SPAWN = 6.1f;
 
 void InitSmoothworld(int height, int width, float (*pixelData)[height][width], unsigned char pattern) {
     srand(pattern);

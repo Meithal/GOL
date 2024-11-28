@@ -73,3 +73,17 @@ target_link_libraries(Mandel PRIVATE glfw)
 target_include_directories(Mandel PUBLIC glad/include)
 
 ADD_DEPENDENCIES ( Mandel copy_shaders )
+
+add_executable(RealSmooth
+        real_smooth.c
+        glad/src/glad.c
+        util_glfw.h
+        util_glfw.c
+)
+
+target_include_directories(RealSmooth PRIVATE glfw/include)
+target_include_directories(RealSmooth PRIVATE glfw/deps)
+target_link_libraries(RealSmooth PRIVATE glfw)
+target_include_directories(RealSmooth PUBLIC glad/include)
+
+ADD_DEPENDENCIES ( RealSmooth copy_shaders )

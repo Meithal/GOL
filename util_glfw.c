@@ -99,17 +99,24 @@ GLFWwindow* OpenWindow(const char * title, int width, int height, bool is_fullsc
     return window;
 }
 
+char * GetShaderSource_freeme(const char * filename, long * length) {
+    *length = getFileSize(filename);
+    char *shader_text = malloc(*length);
+    FILE *f = fopen(filename, "rb");
+    fread(shader_text, *length, 1, f);
+    fclose(f);
+
+    return shader_text;
+}
+
 void LoadShaders(GLuint * program, GLint * vpos_location, GLint * vcol_location) {
 
     GLuint vertex_shader, fragment_shader;
 
     {
         vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        long vert_size = getFileSize("shaders/pixel_screen.vert");
-        char *vertex_shader_text = malloc(vert_size);
-        FILE *f = fopen("shaders/pixel_screen.vert", "rb");
-        fread(vertex_shader_text, vert_size, 1, f);
-        fclose(f);
+        long vert_size;
+        char *vertex_shader_text = GetShaderSource_freeme("shaders/pixel_screen.vert", &vert_size);
         const char *sourceStrings[] = {vertex_shader_text};
         const int lengthStrings[] = {(GLint) vert_size};
 
@@ -132,11 +139,8 @@ void LoadShaders(GLuint * program, GLint * vpos_location, GLint * vcol_location)
     {
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
-        long frag_size = getFileSize("shaders/simple.frag");
-        char * fragment_shader_text = malloc(frag_size);
-        FILE * f = fopen("shaders/simple.frag", "rb");
-        fread(fragment_shader_text, frag_size, 1, f);
-        fclose(f);
+        long frag_size;
+        char *fragment_shader_text = GetShaderSource_freeme("shaders/simple.frag", &frag_size);
         const char* sourceStrings[] = { fragment_shader_text };
         const int lengthStrings[] = { (GLint)frag_size };
 

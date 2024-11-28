@@ -62,6 +62,8 @@ void check_program_link(GLuint program) {
     if (!success) {
         glGetProgramInfoLog(program, 512, NULL, info_log);
         printf("Program Linking Error: %s\n", info_log);
+    } else {
+        printf("Shader program linking success\n\n");
     }
 }
 
