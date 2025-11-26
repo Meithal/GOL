@@ -1,10 +1,10 @@
 .PHONY: GOL
 
-GOL: glad glfw/CMakeLists.txt build
+GOL: glad glfw/CMakeLists.txt build/CMakeCache.txt
 	cmake --build build
 	build/GOL
 
-build:
+build/CMakeCache.txt:
 	mkdir build
 	cmake -S . -B build .
 

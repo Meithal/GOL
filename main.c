@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <string.h>
 #include <float.h>
+#include <stdbool.h>
+#include <time.h>
 
 #include "util_glfw.h"
 #include "smoothlife.h"
@@ -14,8 +16,8 @@
 
 //static int WIDTH = 1680;
 //static int HEIGHT = 1050;
-static int WIDTH = 640;
-static int HEIGHT = 480;
+static int WIDTH = 1640;
+static int HEIGHT = 1480;
 
 struct cellState {
     float value;
@@ -46,7 +48,7 @@ void IterateWolf(int height, int width, float (*pixelColors)[height][width][2], 
                        + ((int)(*pixelColors)[(height + line-1) % height][(x+1) % width][0] << 0);
         assert(previous >= 0 && previous <= 7);
 
-        int new_value = (_Bool )(pattern & ((1 << previous)));
+        int new_value = (_Bool )(pattern & (1 << previous));
         (*pixelColors)[line][x][0] = new_value;
     }
 }
@@ -174,11 +176,11 @@ void InitConway(int height, int width, float (*pixelData)[height][width][2], sig
 }
 
 void IterateConway(
-        int height, int width, float (*pixelColors)[height][width][2],
+        int const height, int const width, float (*pixelColors)[height][width][2],
         float (*newPixelColors)[height][width][2], struct cellState(*rule)(float, float, float)) {
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; x++) {
-            float moore = (*pixelColors)[(y + height -1)%height][(x+width-1)%width][0]
+            float const moore = (*pixelColors)[(y + height -1)%height][(x+width-1)%width][0]
                     + (*pixelColors)[(y + height -1)%height][x][0]
                     + (*pixelColors)[(y + height -1)%height][(x+1)%width][0]
 
@@ -188,7 +190,7 @@ void IterateConway(
                     + (*pixelColors)[(y+1)%height][x][0]
                     + (*pixelColors)[(y+1)%height][(x+1)%width][0];
 
-            struct cellState s = rule((*pixelColors)[y][x][0], (*pixelColors)[y][x][1], moore);
+            struct cellState const s = rule((*pixelColors)[y][x][0], (*pixelColors)[y][x][1], moore);
             (*newPixelColors)[y][x][0] = s.value;
             (*newPixelColors)[y][x][1] = s.heat;
         }
@@ -197,7 +199,7 @@ void IterateConway(
     memcpy(pixelColors, newPixelColors, sizeof *newPixelColors);
 }
 
-static struct cellState conway_rule(float current_state, float heat, float moore_number) {
+static struct cellState conway_rule(float const current_state, float const heat, float const moore_number) {
     if (current_state && (moore_number == 2 || moore_number == 3))
         return (struct cellState){1, heat * .99f};
     if (!current_state && (moore_number == 3))
@@ -207,9 +209,9 @@ static struct cellState conway_rule(float current_state, float heat, float moore
 
 void LaunchConway(signed char seed)
 {
-    float (*pixelColors)[HEIGHT*WIDTH*3] = malloc(sizeof (float[HEIGHT*WIDTH*3]));
-    float (*pixelData)[HEIGHT][WIDTH][2] = malloc(sizeof (float[HEIGHT][WIDTH][2]));
-    float (*newPixelData)[HEIGHT][WIDTH][2] = malloc(sizeof (float[HEIGHT][WIDTH][2]));
+    float (*pixelColors)[HEIGHT*WIDTH*3] = malloc(sizeof *pixelColors);
+    float (*pixelData)[HEIGHT][WIDTH][2] = malloc(sizeof *pixelData);
+    float (*newPixelData)[HEIGHT][WIDTH][2] = malloc(sizeof *newPixelData);
 
     if(pixelColors == NULL || newPixelData == NULL || pixelData == NULL) {
         fprintf(stderr, "fail to generate color buffer on CPU\n");
@@ -229,6 +231,9 @@ void LaunchConway(signed char seed)
 
     glClearColor(0x18/255.f, 0x18/255.f,0x18/255.f, 1);
 
+    clock_t start_clock = clock();
+    printf("clock start %lu\n", start_clock);
+    int iterations = 0;
     while (!glfwWindowShouldClose(window))
     {
         int width, height;
@@ -245,6 +250,15 @@ void LaunchConway(signed char seed)
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        clock_t const current_clock = clock();
+        if ((double)(current_clock - start_clock) / CLOCKS_PER_SEC >= 1)
+        {
+            printf("FPS: %d\n", iterations);
+            iterations = 0;
+            start_clock = current_clock;
+        }
+        iterations++;
     }
 
     free(pixelColors);
