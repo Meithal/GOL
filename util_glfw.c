@@ -68,9 +68,11 @@ GLFWwindow* OpenWindow(const char * title, int width, int height, bool is_fullsc
     // Print monitor resolution
     fprintf(stderr, "Monitor resolution: %d x %d\n", videoMode->width, videoMode->height);
 
-    window = glfwCreateWindow(width, height, title,
-                              is_fullscreen ? glfwGetPrimaryMonitor(): nullptr, nullptr
+    window = glfwCreateWindow(
+        width, height, title,
+        is_fullscreen ? glfwGetPrimaryMonitor(): nullptr, nullptr
     );
+
     if (!window)
     {
         glfwTerminate();
@@ -80,6 +82,7 @@ GLFWwindow* OpenWindow(const char * title, int width, int height, bool is_fullsc
     glfwSetKeyCallback(window, key_callback);
 
     glfwMakeContextCurrent(window);
+    //glfwSwapInterval(0);
 
     int version = gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
 
@@ -87,10 +90,10 @@ GLFWwindow* OpenWindow(const char * title, int width, int height, bool is_fullsc
         fprintf(stderr, "Failed to initialize OpenGL context\n");
         glfwTerminate();
         exit(EXIT_FAILURE);
-    } else {
-        printf("Loaded OpenGL %d \n", version);//, GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
-        printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
     }
+
+    printf("Loaded OpenGL %d \n", version);//, GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
 
     glfwSwapInterval(has_vertical_sync ? 1 : 0);
 
@@ -103,6 +106,8 @@ char * GetShaderSource_freeme(const char * filename, long * length) {
     *length = getFileSize(filename);
     char *shader_text = malloc(*length);
     FILE *f = fopen(filename, "rb");
+    if(!f)
+        fprintf(stderr, "Can't open shader file %s\n", filename), exit(EXIT_FAILURE);
     fread(shader_text, *length, 1, f);
     fclose(f);
 
@@ -191,8 +196,8 @@ void LoadShaders(GLuint * program, GLint * vpos_location, GLint * vcol_location)
 
 
 // Define your pixels as points (positions in normalized coordinates, colors)
-int GeneratePixelData(int height, int width, float (*pixelColorData)[height*width * 3],
-                      int pos_index, int col_index, GLuint *VAO, GLuint * VBO) {
+int GeneratePixelData(int const height, int const width, float const (*pixelColorData)[height*width*3],
+                      int const pos_index, int const col_index, GLuint *VAO, GLuint * VBO) {
 
     float (*pixelPosData)[height*width * 2] = malloc(sizeof (float[height*width*2]));
 
@@ -201,7 +206,7 @@ int GeneratePixelData(int height, int width, float (*pixelColorData)[height*widt
     // Example: Add points with different colors and positions
     for (int i = 0; i < height*width; ++i) {
         float x = (float)(i % width) / (float)width * 2.0f - 1.0f;
-        float y = (float)(int)(i / width) / (float)height * 2.0f - 1.0f;
+        float y = (float)(i / width) / (float)height * 2.0f - 1.0f;
 
         (*pixelPosData)[j++] =x;
         (*pixelPosData)[j++] =-y;
@@ -225,13 +230,13 @@ int GeneratePixelData(int height, int width, float (*pixelColorData)[height*widt
     glVertexAttribPointer(col_index, 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof *pixelPosData));
     glEnableVertexAttribArray(col_index);
 
-    free(pixelPosData);
+    free(pixelPosData); // ?
 
     return sizeof *pixelPosData;
 }
 
-void RenderPixels(int size, GLuint shaderProgram, GLuint VAO,
-                  int height, int width, long offset, float (*pixelColorData)[height*width*3]) {
+void RenderPixels(int const size, GLuint const shaderProgram, GLuint VAO,
+                  int const height, int const width, long const offset, float const (*pixelColorData)[height*width*3]) {
 
     // Render points
     glBufferSubData(GL_ARRAY_BUFFER, offset, (long)(sizeof *pixelColorData), pixelColorData);

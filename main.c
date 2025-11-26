@@ -16,23 +16,25 @@
 
 //static int WIDTH = 1680;
 //static int HEIGHT = 1050;
-static int WIDTH = 1640;
-static int HEIGHT = 1480;
+static int WIDTH = 640;
+static int HEIGHT = 480;
 
 struct cellState {
     float value;
     float heat;
 };
 
-void ConvertDataToColors(int height, int width, float (*pixelData)[height][width][2], float (*pixelColors)[HEIGHT*WIDTH*3])
+void ConvertDataToColors(int height, int width, float const (*pixelData)[height][width][2], float (*pixelColors)[HEIGHT*WIDTH*3])
 {
     int k = 0;
     for (int i = 0; i < HEIGHT*WIDTH; ++i) {
-        bool is_on = (*pixelData)[i / HEIGHT][i % WIDTH][0] > FLT_EPSILON;
-        float heat = (*pixelData)[i / HEIGHT][i % WIDTH][1];
-        float r = is_on ? 1 : 0x18/255.f;
-        float g = is_on ? 0.5f + (1-heat) * 0.5f : 0x18/255.f;
-        float b = is_on ? 0.5f + (1-heat) * 0.5f : 0x18/255.f;
+        int const y = i / WIDTH;
+        int const x = i % WIDTH;
+        bool const is_on = (*pixelData)[y][x][0] > FLT_EPSILON;
+        float const heat = (*pixelData)[y][x][1];
+        float const r = is_on ? 1 : 0x18/255.f;
+        float const g = is_on ? 0.5f + (1-heat) * 0.5f : 0x18/255.f;
+        float const b = is_on ? 0.5f + (1-heat) * 0.5f : 0x18/255.f;
 
         (*pixelColors)[k++] =r;
         (*pixelColors)[k++] =g;
@@ -40,16 +42,15 @@ void ConvertDataToColors(int height, int width, float (*pixelData)[height][width
     }
 }
 
-void IterateWolf(int height, int width, float (*pixelColors)[height][width][2], unsigned char pattern, int line)
+void IterateWolf(int const height, int const width, float (*pixelColors)[height][width][2], unsigned char const pattern, int const line)
 {
     for (int x = 0; x < width; x++) {
-        int previous = ((int)(*pixelColors)[(height + line-1) % height][(width + x-1) % width][0] << 2)
+        int const previous = ((int)(*pixelColors)[(height + line-1) % height][(width + x-1) % width][0] << 2)
                        + ((int)(*pixelColors)[(height + line-1) % height][x][0] << 1)
                        + ((int)(*pixelColors)[(height + line-1) % height][(x+1) % width][0] << 0);
         assert(previous >= 0 && previous <= 7);
 
-        int new_value = (_Bool )(pattern & (1 << previous));
-        (*pixelColors)[line][x][0] = new_value;
+        (*pixelColors)[line][x][0] = (_Bool )(pattern & (1 << previous));
     }
 }
 
@@ -163,16 +164,15 @@ void LaunchWolfram(unsigned char seed) {
     glfwTerminate();
 }
 
-void InitConway(int height, int width, float (*pixelData)[height][width][2], signed char pattern) {
+void InitConway(int const height, int const width, float (*pixelData)[height][width][2], signed char const pattern) {
     srand(pattern);
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; x++) {
-            (*pixelData)[y][x][0] = rand() & 1;
+            (*pixelData)[y][x][0] = (float)(rand() & 1);
             (*pixelData)[y][x][1] = 1;
         }
     }
-
 }
 
 void IterateConway(
@@ -181,14 +181,15 @@ void IterateConway(
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; x++) {
             float const moore = (*pixelColors)[(y + height -1)%height][(x+width-1)%width][0]
-                    + (*pixelColors)[(y + height -1)%height][x][0]
-                    + (*pixelColors)[(y + height -1)%height][(x+1)%width][0]
+            + (*pixelColors)[(y + height -1)%height][x][0]
+            + (*pixelColors)[(y + height -1)%height][(x+1)%width][0]
 
-                    + (*pixelColors)[y][(x+width-1)%width][0] + (*pixelColors)[y][(x+1)%width][0]
+            + (*pixelColors)[y][(x+width-1)%width][0]
+            + (*pixelColors)[y][(x+1)%width][0]
 
-                    + (*pixelColors)[(y+1)%height][(x+width-1)%width][0]
-                    + (*pixelColors)[(y+1)%height][x][0]
-                    + (*pixelColors)[(y+1)%height][(x+1)%width][0];
+            + (*pixelColors)[(y+1)%height][(x+width-1)%width][0]
+            + (*pixelColors)[(y+1)%height][x][0]
+            + (*pixelColors)[(y+1)%height][(x+1)%width][0];
 
             struct cellState const s = rule((*pixelColors)[y][x][0], (*pixelColors)[y][x][1], moore);
             (*newPixelColors)[y][x][0] = s.value;
@@ -196,7 +197,7 @@ void IterateConway(
         }
     }
 
-    memcpy(pixelColors, newPixelColors, sizeof *newPixelColors);
+   // memcpy(pixelColors, newPixelColors, sizeof *newPixelColors);
 }
 
 static struct cellState conway_rule(float const current_state, float const heat, float const moore_number) {
@@ -209,6 +210,7 @@ static struct cellState conway_rule(float const current_state, float const heat,
 
 void LaunchConway(signed char seed)
 {
+    // passé en ur a openGL, du coup tableau flat
     float (*pixelColors)[HEIGHT*WIDTH*3] = malloc(sizeof *pixelColors);
     float (*pixelData)[HEIGHT][WIDTH][2] = malloc(sizeof *pixelData);
     float (*newPixelData)[HEIGHT][WIDTH][2] = malloc(sizeof *newPixelData);
@@ -233,7 +235,9 @@ void LaunchConway(signed char seed)
 
     clock_t start_clock = clock();
     printf("clock start %lu\n", start_clock);
+
     int iterations = 0;
+
     while (!glfwWindowShouldClose(window))
     {
         int width, height;
@@ -250,6 +254,11 @@ void LaunchConway(signed char seed)
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        // intervertit les buffers
+        void*tmp = pixelData;
+        pixelData = newPixelData;
+        newPixelData = tmp;
 
         clock_t const current_clock = clock();
         if ((double)(current_clock - start_clock) / CLOCKS_PER_SEC >= 1)

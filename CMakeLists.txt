@@ -30,15 +30,28 @@ target_include_directories(GOL PRIVATE glfw/deps)
 target_link_libraries(GOL PRIVATE glfw)
 
 # Define the source and destination directories for shader files
-set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/shaders")
-set(SHADER_BUILD_DIR "${CMAKE_BINARY_DIR}/shaders")
+set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+set(SHADER_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 
 # Create a list of shader files
 file(GLOB SHADER_FILES "${SHADER_SOURCE_DIR}/*")
 
+set(SHADER_BUILD_FILES "")
+foreach(SHADER ${SHADER_FILES})
+        get_filename_component(FNAME ${SHADER} NAME)
+        list(APPEND SHADER_BUILD_FILES "${SHADER_BUILD_DIR}/${FNAME}")
+endforeach()
+
+message(STATUS "binary dir: ${CMAKE_BINARY_DIR}")
+message(STATUS "current binary dir: ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "Shader source dir: ${SHADER_SOURCE_DIR}")
+message(STATUS "Shader build dir:  ${SHADER_BUILD_DIR}")
+message(STATUS "Shader files:      ${SHADER_FILES}")
+message(STATUS "Shader build files:      ${SHADER_BUILD_FILES}")
+
 # Custom command to copy the shaders only when they are changed
 add_custom_command(
-        OUTPUT ${SHADER_BUILD_DIR}
+        OUTPUT ${SHADER_BUILD_FILES}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_BUILD_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHADER_FILES} ${SHADER_BUILD_DIR}
         DEPENDS ${SHADER_FILES}
@@ -49,6 +62,10 @@ add_custom_command(
 add_custom_target(copy_shaders ALL DEPENDS ${SHADER_BUILD_DIR})
 ADD_DEPENDENCIES ( GOL copy_shaders )
 
+add_custom_command(TARGET GOL POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:GOL>/shaders"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHADER_FILES} "$<TARGET_FILE_DIR:GOL>/shaders"
+)
 add_executable(Rafler
         raffler.c
         rafler.h
